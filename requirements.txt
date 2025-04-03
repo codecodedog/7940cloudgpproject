@@ -1,3 +1,6 @@
 telegram
 configparser
 redis
+python-dotenv
+pymysql
+requests
