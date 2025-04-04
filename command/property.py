@@ -10,6 +10,7 @@ from telegram.ext import (
 from util.db_connect import get_connection as db
 from util.constant import *
 from util.logger import logger
+from command.general import assign_to_group
 
 # Property Registration Flow
 def property_type_choice(update: Update, context: CallbackContext) -> int:
@@ -28,7 +29,7 @@ def property_type_choice(update: Update, context: CallbackContext) -> int:
             "Property search feature coming soon!",
             reply_markup=ReplyKeyboardRemove()
         )
-        return ConversationHandler.END
+        return question_asked
         
     # Starting property registration
     update.message.reply_text(
@@ -287,3 +288,10 @@ def property_registration_confirm(update: Update, context: CallbackContext) -> i
         )
         return ConversationHandler.END
 
+# Implement property search functionality
+def search_property(update: Update, context: CallbackContext) -> int:
+    update.message.reply_text(
+        "What are you looking for?",
+        reply_markup=ReplyKeyboardRemove()
+    )
+    return question_asked
