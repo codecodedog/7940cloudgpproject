@@ -15,7 +15,6 @@ from util.logger import logger
 # Load environment variables from .env file
 load_dotenv()
 
-
 def main() -> None:
     # Start the bot
     updater = Updater(token=os.getenv("TELEGRAM_KEY"))
