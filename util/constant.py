@@ -10,10 +10,11 @@ prop_type_choice = 10  # Leasing or Purchasing
 prop_district = 11
 prop_address = 12
 prop_condition = 13
-prop_price_min = 14
-prop_price_max = 15
-prop_duration = 16
-prop_confirm = 17
+prop_condition_selection = 14
+prop_price_min = 15
+prop_price_max = 16
+prop_duration = 17
+prop_confirm = 18
 
 # Group assignment state
 group_assignment = 20

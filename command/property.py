@@ -92,7 +92,7 @@ def property_condition(update: Update, context: CallbackContext) -> int:
     # Initialize empty property conditions list
     context.user_data['property_conditions'] = []
     
-    return prop_price_min
+    return prop_condition_selection
 
 def property_conditions_selection(update: Update, context: CallbackContext) -> int:
     # Add conditions one by one until user types "Done"
@@ -112,7 +112,7 @@ def property_conditions_selection(update: Update, context: CallbackContext) -> i
         update.message.reply_text(
             "Please type your custom condition:"
         )
-        return prop_condition
+        return prop_condition_selection
     else:
         # Add this condition to the property conditions list
         if 'property_conditions' not in context.user_data:
@@ -134,7 +134,7 @@ def property_conditions_selection(update: Update, context: CallbackContext) -> i
             reply_markup=ReplyKeyboardMarkup(condition_buttons, one_time_keyboard=False)
         )
         
-        return prop_condition
+        return prop_condition_selection
 
 def property_price_min(update: Update, context: CallbackContext) -> int:
     # If coming from condition selection, we need to convert conditions to JSON

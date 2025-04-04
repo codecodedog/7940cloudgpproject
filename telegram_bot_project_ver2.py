@@ -58,6 +58,9 @@ def main() -> None:
                 MessageHandler(Filters.text & ~Filters.command, property_address)
             ],
             prop_condition: [
+                MessageHandler(Filters.text & ~Filters.command, property_condition)
+            ],
+            prop_condition_selection: [
                 MessageHandler(Filters.text & ~Filters.command, property_conditions_selection)
             ],
             prop_price_min: [
