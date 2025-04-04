@@ -2,11 +2,11 @@ import mysql.connector
 import os
 
 # Connection details
-host = os.environ['server']
+host = os.getenv('server')
 port = 3306
-database = os.environ['database']
-username = os.environ['username']
-password = os.environ['password']
+database = os.getenv('database')
+username = os.getenv('username')
+password = os.getenv('password')
 
 def get_connection():
     # Establish connection
