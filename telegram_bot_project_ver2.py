@@ -5,7 +5,6 @@ from telegram.ext import (
     Updater, CommandHandler, MessageHandler, Filters, 
     CallbackContext, ConversationHandler, CallbackQueryHandler
 )
-
 from command.general import *
 from command.register import *
 from command.property import *
