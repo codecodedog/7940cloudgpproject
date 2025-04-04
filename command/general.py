@@ -1,13 +1,20 @@
+import os
+import requests
+import json
+
 from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
     Updater, CommandHandler, MessageHandler, Filters, 
     CallbackContext, ConversationHandler, CallbackQueryHandler
 )
 from typing import Optional, Dict, List
+import util.db_connect
+from util.constant import *
+from util.logger import logger
 
 class ChatGPT:
     def __init__(self):
-        self.apiKey = os.environ.get('CHATGPT_API_KEY')
+        self.apiKey = os.getenv('CHATGPT_API_KEY')
         self.modelName = "gpt-4-o-mini"
         self.apiVersion = "2024-10-21"
         self.basicUrl = "https://genai.hkbu.edu.hk/general/rest"

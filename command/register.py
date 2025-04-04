@@ -1,8 +1,15 @@
+import os
+import requests
+import json
+
 from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
     Updater, CommandHandler, MessageHandler, Filters, 
     CallbackContext, ConversationHandler, CallbackQueryHandler
 )
+from util.db_connect import get_connection as db
+from util.constant import *
+from util.logger import logger
 
 # User Registration Flow
 def register_command(update: Update, context: CallbackContext) -> int:
@@ -162,7 +169,7 @@ def register_confirm(update: Update, context: CallbackContext) -> int:
     
     # Store in database
     try:
-        conn = db_connect.get_connection()
+        conn = db()
         cursor = conn.cursor()
         
         # Check if user exists

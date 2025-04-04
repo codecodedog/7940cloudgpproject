@@ -1,12 +1,5 @@
 import os
-import logging
-import requests
-import db_connect
-import datetime
-import json
-from db_connect import get_connection
 from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove, InlineKeyboardButton, InlineKeyboardMarkup
-from typing import Optional, Dict, List
 from dotenv import load_dotenv
 from telegram.ext import (
     Updater, CommandHandler, MessageHandler, Filters, 
@@ -16,44 +9,16 @@ from telegram.ext import (
 from command.general import *
 from command.register import *
 from command.property import *
+from util.constant import *
+from util.logger import logger
 
 # Load environment variables from .env file
 load_dotenv()
 
-# Enable logging
-logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", 
-    level=logging.DEBUG
-)
-logger = logging.getLogger(__name__)
-
-# Conversation states - User Registration
-user_telegram_id = 1
-user_username = 2
-user_condition = 3
-user_district = 4
-user_confirm = 5
-
-# Conversation states - Property Registration
-prop_type_choice = 10  # Leasing or Purchasing
-prop_district = 11
-prop_address = 12
-prop_condition = 13
-prop_price_min = 14
-prop_price_max = 15
-prop_duration = 16
-prop_confirm = 17
-
-# Group assignment state
-group_assignment = 20
-
-# Normal conversation state
-question_asked = 30
-
 
 def main() -> None:
     # Start the bot
-    updater = Updater(token=os.environ.get("TELEGRAM_KEY"))
+    updater = Updater(token=os.getenv("TELEGRAM_KEY"))
     dispatcher = updater.dispatcher
     
     # Main conversation handler

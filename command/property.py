@@ -1,22 +1,15 @@
+import os
+import requests
+import json
+
 from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
     Updater, CommandHandler, MessageHandler, Filters, 
     CallbackContext, ConversationHandler, CallbackQueryHandler
 )
-
-# Districts in Hong Kong
-hk_districts = [
-    "Central & Western", "Wan Chai", "Eastern", "Southern", 
-    "Yau Tsim Mong", "Sham Shui Po", "Kowloon City", "Wong Tai Sin", 
-    "Kwun Tong", "Tsuen Wan", "Tuen Mun", "Yuen Long", 
-    "North", "Tai Po", "Sha Tin", "Sai Kung", "Islands"
-]
-
-# Property conditions
-property_conditions = [
-    "Sea View", "Transportation", "New Building", "Renovated", 
-    "Pet Friendly", "Furnished", "Near MTR", "Near Schools"
-]
+import util.db_connect
+from util.constant import *
+from util.logger import logger
 
 # Property Registration Flow
 def property_type_choice(update: Update, context: CallbackContext) -> int:

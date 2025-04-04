@@ -1,15 +1,21 @@
 import mysql.connector
 import os
+from util.logger import logger
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Connection details
-host = os.getenv('server')
+host = os.getenv('DB_ENDPOINT')
 port = 3306
-database = os.getenv('database')
-username = os.getenv('username')
-password = os.getenv('password')
+database = os.getenv('DB_NAME')
+username = os.getenv('DB_USERNAME')
+password = os.getenv('DB_PASSWORD')
 
 def get_connection():
     # Establish connection
+    print('12312313121313121213213')
+    print(host, port, database, username, password)
     conn = mysql.connector.connect(
         host=host,
         port=port,
