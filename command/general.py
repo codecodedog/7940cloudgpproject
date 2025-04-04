@@ -67,7 +67,7 @@ def start(update: Update, context: CallbackContext) -> int:
         conn = db()
         cursor = conn.cursor()
         
-        cursor.execute("SELECT ID FROM user WHERE telegram_id = %s", (str(user.id),))
+        cursor.execute("SELECT ID FROM user WHERE telegram_id = %s AND isActive = 1", (str(user.id),))
         existing_user = cursor.fetchone()
         
         cursor.close()

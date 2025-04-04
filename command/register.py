@@ -179,32 +179,40 @@ def register_confirm(update: Update, context: CallbackContext) -> int:
         if not existing_user:
             # Insert new user
             cursor.execute(
-                "INSERT INTO user (telegram_id, username, `condition`, preferred_district) "
-                "VALUES (%s, %s, %s, %s)",
-                (str(telegram_id), username, condition, preferred_district)
+                "INSERT INTO user (telegram_id, username, `condition`, preferred_district, isActive) "
+                "VALUES (%s, %s, %s, %s, %s)",
+                (telegram_id, username, condition, preferred_district, 1)
             )
         else:
             # Update existing user
             cursor.execute(
-                "UPDATE user SET username = %s, `condition` = %s, preferred_district = %s "
+                "UPDATE user SET username = %s, `condition` = %s, preferred_district = %s, isActive = %s "
                 "WHERE telegram_id = %s",
-                (username, condition, preferred_district, str(telegram_id))
+                (username, condition, preferred_district, 1, telegram_id)
             )
         
-        conn.commit()
-        cursor.close()
-        conn.close()
         
         # Provide options to continue
+        reply_str = (
+            "Registration successful! \n"
+            f"Please join the following group for your preferred district discussion! \n\n"
+        )
+        for district in json.loads(preferred_district):
+            reply_str += f"{district}: {group_invite_link[district]}"
+            
         update.message.reply_text(
-            "Registration successful! What would you like to do next?",
+            reply_str, 
             reply_markup=ReplyKeyboardMarkup([
                 ['Register a Property'], 
                 ['Search for Properties'],
                 ['Ask a Question']
             ], one_time_keyboard=True)
         )
-        
+
+        conn.commit()   
+        cursor.close()
+        conn.close()
+
         # Remember user ID for future operations
         context.user_data['user_id'] = existing_user[0] if existing_user else cursor.lastrowid
         
@@ -217,3 +225,7 @@ def register_confirm(update: Update, context: CallbackContext) -> int:
             reply_markup=ReplyKeyboardRemove()
         )
         return ConversationHandler.END
+    
+
+
+"You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'telegram_id = 758731911' at line 1"

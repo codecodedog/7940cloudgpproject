@@ -36,3 +36,23 @@ property_conditions = [
     "Sea View", "Transportation", "New Building", "Renovated", 
     "Pet Friendly", "Furnished", "Near MTR", "Near Schools"
 ]
+
+# Group Link
+group_invite_link = {
+    "Central & Western": "https://t.me/+ZwF96gQ0iaIzMjdl",
+    "Wan Chai": "https://t.me/+ZwF96gQ0iaIzMjdl",
+    "Eastern": "https://t.me/+ZwF96gQ0iaIzMjdl",
+    "Southern": "https://t.me/+ZwF96gQ0iaIzMjdl",
+    "Yau Tsim Mong": "https://t.me/+ZwF96gQ0iaIzMjdl",
+    "Sham Shui Po": "https://t.me/+ZwF96gQ0iaIzMjdl",
+    "Kowloon City": "https://t.me/+ZwF96gQ0iaIzMjdl",
+    "Wong Tai Sin": "https://t.me/+ZwF96gQ0iaIzMjdl",
+    "Kwun Tong": "https://t.me/+ZwF96gQ0iaIzMjdl",
+    "Tsuen Wan": "https://t.me/+ZwF96gQ0iaIzMjdl",
+    "Tuen Mun": "https://t.me/+ZwF96gQ0iaIzMjdl",
+    "Yuen Long": "https://t.me/+ZwF96gQ0iaIzMjdl",
+    "Tai Po": "https://t.me/+ZwF96gQ0iaIzMjdl",
+    "Sha Tin": "https://t.me/+ZwF96gQ0iaIzMjdl",
+    "Sai Kung": "https://t.me/+ZwF96gQ0iaIzMjdl",
+    "Islands": "https://t.me/+ZwF96gQ0iaIzMjdl",
+}

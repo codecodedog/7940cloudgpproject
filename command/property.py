@@ -26,8 +26,8 @@ def property_type_choice(update: Update, context: CallbackContext) -> int:
     if user_choice == 'Search for Properties':
         # Implement property search functionality
         update.message.reply_text(
-            "Property search feature coming soon!",
-            reply_markup=ReplyKeyboardRemove()
+            "What are you looking for?",
+            reply_markup=ReplyKeyboardMarkup([['Base on my profile']], one_time_keyboard=True)
         )
         return prop_search
         
@@ -290,8 +290,77 @@ def property_registration_confirm(update: Update, context: CallbackContext) -> i
 
 # Implement property search functionality
 def property_search(update: Update, context: CallbackContext) -> int:
-    update.message.reply_text(
-        "What are you looking for?",
-        reply_markup=ReplyKeyboardRemove()
-    )
-    return question_asked
+    try:
+        user_telegramId = context._user_id_and_data[0]
+        user_district = ''
+        user_factor = []
+        properties_preferences = []
+
+        conn = db()
+        cursor = conn.cursor()
+        
+        cursor.execute("SELECT * FROM user where telegram_id = " + str(user_telegramId))
+        user = cursor.fetchone()
+        user_id = user[0]
+        user_factor = json.loads(user[3])
+        user_district = json.loads(user[4])
+
+        cursor.execute("SELECT * FROM property INNER JOIN user ON property.user_id = user.ID WHERE property.user_id <>" + str(user_id))
+        propertyList = cursor.fetchall()
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+
+        for row in propertyList:
+            
+            properties_preferences.append({
+                "district": row[2],
+                "factor": json.loads(row[4]),
+                "owner": {
+                    "telegram_id": row[10],
+                    "username": row[11],
+                },
+                "is_rent":  "Rent" if row[5] else "Leasing", 
+                "address": row[3],
+                "price_range": f"{row[6]} - {row[7]}",
+                "paid_duration": row[8]
+            })
+        
+        print(properties_preferences)
+
+        result = []
+
+        for property in properties_preferences:
+            if(any(item in property["factor"] for item in user_factor) and property["district"] in user_district):
+                result.append(property)
+        
+        if len(result) == 0:
+            update.message.reply_text(
+                "Sorry, there are no property that are suitable at the moment"
+            )
+        else:
+            reply_str = "There are several property that you may feel interested:\n\n"
+            for filterProperty in result:
+                reply_str += (f"{filterProperty['address']} \n"
+                + f"District: {filterProperty['district']}\n"
+                + f"Conditions: {filterProperty['factor']}\n"
+                + f"Owner: @{filterProperty['owner']['username']}\n"
+                + f"Price Range: {filterProperty['price_range']}\n"
+                + f"Paid Duration: {filterProperty['paid_duration']}\n"
+                + "\n\n")
+
+            update.message.reply_text(
+                reply_str
+            )
+      
+
+        return question_asked
+
+    except Exception as e:
+        update.message.reply_text(
+            "Sorry, there was an error . Please try again later.",
+            reply_markup=ReplyKeyboardRemove()
+        )
+        return ConversationHandler.END
+    
