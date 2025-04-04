@@ -7,7 +7,7 @@ from telegram.ext import (
     Updater, CommandHandler, MessageHandler, Filters, 
     CallbackContext, ConversationHandler, CallbackQueryHandler
 )
-import util.db_connect
+from util.db_connect import get_connection as db
 from util.constant import *
 from util.logger import logger
 
@@ -262,7 +262,7 @@ def property_registration_confirm(update: Update, context: CallbackContext) -> i
     
     try:
         # Store property in database
-        conn = db_connect.get_connection()
+        conn = db()
         cursor = conn.cursor()
         
         cursor.execute(

@@ -8,7 +8,7 @@ from telegram.ext import (
     CallbackContext, ConversationHandler, CallbackQueryHandler
 )
 from typing import Optional, Dict, List
-import util.db_connect
+from util.db_connect import get_connection as db
 from util.constant import *
 from util.logger import logger
 
@@ -64,7 +64,7 @@ def start(update: Update, context: CallbackContext) -> int:
     
     # Check if user is already registered
     try:
-        conn = db_connect.get_connection()
+        conn = db()
         cursor = conn.cursor()
         
         cursor.execute("SELECT ID FROM user WHERE telegram_id = %s", (str(user.id),))
