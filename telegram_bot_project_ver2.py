@@ -34,7 +34,8 @@ user_confirm = 5
 prop_type_choice = 10  # Leasing or Purchasing
 prop_district = 11
 prop_address = 12
-prop_condition = 13
+prop_condition_input = 13 # Initial saving of address
+prop_condition_selection = 130 # Selection of condition after address is saved
 prop_price_min = 14
 prop_price_max = 15
 prop_duration = 16
@@ -349,13 +350,16 @@ def property_address(update: Update, context: CallbackContext) -> int:
         reply_markup=ReplyKeyboardRemove()
     )
     
-    return prop_condition
+    return prop_condition_input
 
 def property_condition(update: Update, context: CallbackContext) -> int:
     # Save address
     address = update.message.text
     context.user_data['address'] = address
     
+    # Check to see address is filled in or not
+    update.message.reply_text(f"Adress: {address}\n\n")
+
     # Create buttons for property conditions
     condition_buttons = [[condition] for condition in property_conditions]
     condition_buttons.append(['Other'])
@@ -369,10 +373,11 @@ def property_condition(update: Update, context: CallbackContext) -> int:
     # Initialize empty property conditions list
     context.user_data['property_conditions'] = []
     
-    return prop_price_min
+    return prop_condition_selection
 
 def property_conditions_selection(update: Update, context: CallbackContext) -> int:
-    # Add conditions one by one until user types "Done"
+    # No change to the function logic, just make sure it returns to prop_condition_selection
+    # when not proceeding to price input
     user_input = update.message.text
     
     if user_input == 'Done':
@@ -389,7 +394,7 @@ def property_conditions_selection(update: Update, context: CallbackContext) -> i
         update.message.reply_text(
             "Please type your custom condition:"
         )
-        return prop_condition
+        return prop_condition_selection  # Return to selection state
     else:
         # Add this condition to the property conditions list
         if 'property_conditions' not in context.user_data:
@@ -411,7 +416,7 @@ def property_conditions_selection(update: Update, context: CallbackContext) -> i
             reply_markup=ReplyKeyboardMarkup(condition_buttons, one_time_keyboard=False)
         )
         
-        return prop_condition
+        return prop_condition_selection  # Return to selection state
 
 def property_price_min(update: Update, context: CallbackContext) -> int:
     # If coming from condition selection, we need to convert conditions to JSON
@@ -727,7 +732,10 @@ def main() -> None:
             prop_address: [
                 MessageHandler(Filters.text & ~Filters.command, property_address)
             ],
-            prop_condition: [
+            prop_condition_input: [
+                MessageHandler(Filters.text & ~Filters.command, property_condition)
+            ],
+            prop_condition_selection: [
                 MessageHandler(Filters.text & ~Filters.command, property_conditions_selection)
             ],
             prop_price_min: [
