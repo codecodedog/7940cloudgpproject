@@ -219,7 +219,7 @@ def register_confirm(update: Update, context: CallbackContext) -> int:
         return prop_type_choice
         
     except Exception as e:
-        logger.error(f"Database error: {e}")
+        logger.error(f"Error: {e}")
         update.message.reply_text(
             "Sorry, there was an error saving your information. Please try again later.",
             reply_markup=ReplyKeyboardRemove()

@@ -359,7 +359,7 @@ def property_search(update: Update, context: CallbackContext) -> int:
 
     except Exception as e:
         update.message.reply_text(
-            "Sorry, there was an error . Please try again later.",
+            "Sorry, there was an error. Please try again later.",
             reply_markup=ReplyKeyboardRemove()
         )
         return ConversationHandler.END
