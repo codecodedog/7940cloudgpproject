@@ -29,7 +29,7 @@ def property_type_choice(update: Update, context: CallbackContext) -> int:
             "Property search feature coming soon!",
             reply_markup=ReplyKeyboardRemove()
         )
-        return question_asked
+        return prop_search
         
     # Starting property registration
     update.message.reply_text(
@@ -289,7 +289,7 @@ def property_registration_confirm(update: Update, context: CallbackContext) -> i
         return ConversationHandler.END
 
 # Implement property search functionality
-def search_property(update: Update, context: CallbackContext) -> int:
+def property_search(update: Update, context: CallbackContext) -> int:
     update.message.reply_text(
         "What are you looking for?",
         reply_markup=ReplyKeyboardRemove()

@@ -83,6 +83,10 @@ def main() -> None:
             question_asked: [
                 MessageHandler(Filters.text & ~Filters.command, handle_question)
             ],
+            # Property search
+            prop_search: [
+                MessageHandler(Filters.text & ~Filters.command, property_search)
+            ]
         },
         fallbacks=[
             CommandHandler("help", help_command),

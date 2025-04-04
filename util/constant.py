@@ -21,6 +21,7 @@ group_assignment = 20
 
 # Normal conversation state
 question_asked = 30
+prop_search = 31
 
 # Districts in Hong Kong
 hk_districts = [
