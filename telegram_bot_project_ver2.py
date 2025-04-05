@@ -1,5 +1,4 @@
 import os
-from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove, InlineKeyboardButton, InlineKeyboardMarkup
 from dotenv import load_dotenv
 from telegram.ext import (
     Updater, CommandHandler, MessageHandler, Filters, 
