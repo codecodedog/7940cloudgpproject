@@ -263,19 +263,22 @@ def property_registration_confirm(update: Update, context: CallbackContext) -> i
     
     try:
         # Store property in database
-        conn = db()
-        cursor = conn.cursor()
-        
-        cursor.execute(
-            "INSERT INTO property (user_id, district, address, `condition`, is_rent, price_min, price_max, paid_duration) "
-            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
-            (user_id, district, address, condition_json, is_rent, price_min, price_max, paid_duration)
-        )
-        
-        property_id = cursor.lastrowid
-        conn.commit()
-        cursor.close()
-        conn.close()
+        obj = json.dumps({
+            "user_id": user_id,
+            "district": district,
+            "address": address,
+            "condition": condition_json,
+            "is_rent": is_rent,
+            "price_min": price_min,
+            "price_max": price_max,
+            "paid_duration": paid_duration,
+        })
+        response = requests.post("http://localhost:5000/property", data=obj, headers={
+            'Content-Type': 'application/json'
+        })
+
+        if response.status_code != 200 :
+            raise Exception("Database Error")
         
         # Send to group assignment
         return assign_to_group(update, context)
@@ -292,50 +295,11 @@ def property_registration_confirm(update: Update, context: CallbackContext) -> i
 def property_search(update: Update, context: CallbackContext) -> int:
     try:
         user_telegramId = context._user_id_and_data[0]
-        user_district = ''
-        user_factor = []
-        properties_preferences = []
 
-        conn = db()
-        cursor = conn.cursor()
-        
-        cursor.execute("SELECT * FROM user where telegram_id = " + str(user_telegramId))
-        user = cursor.fetchone()
-        user_id = user[0]
-        user_factor = json.loads(user[3])
-        user_district = json.loads(user[4])
+        response = requests.get(f"http://localhost:5000/property/search?telegram_id={user_telegramId}")
+        result = json.loads(response.text)
 
-        cursor.execute("SELECT * FROM property INNER JOIN user ON property.user_id = user.ID WHERE property.user_id <>" + str(user_id))
-        propertyList = cursor.fetchall()
-        
-        conn.commit()
-        cursor.close()
-        conn.close()
-
-        for row in propertyList:
-            
-            properties_preferences.append({
-                "district": row[2],
-                "factor": json.loads(row[4]),
-                "owner": {
-                    "telegram_id": row[10],
-                    "username": row[11],
-                },
-                "is_rent":  "Rent" if row[5] else "Leasing", 
-                "address": row[3],
-                "price_range": f"{row[6]} - {row[7]}",
-                "paid_duration": row[8]
-            })
-        
-        print(properties_preferences)
-
-        result = []
-
-        for property in properties_preferences:
-            if(any(item in property["factor"] for item in user_factor) and property["district"] in user_district):
-                result.append(property)
-        
-        if len(result) == 0:
+        if response.status_code != 200 or len(result) == 0:
             update.message.reply_text(
                 "Sorry, there are no property that are suitable at the moment"
             )
@@ -363,4 +327,3 @@ def property_search(update: Update, context: CallbackContext) -> int:
             reply_markup=ReplyKeyboardRemove()
         )
         return ConversationHandler.END
-    

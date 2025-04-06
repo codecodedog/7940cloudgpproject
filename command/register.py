@@ -173,23 +173,46 @@ def register_confirm(update: Update, context: CallbackContext) -> int:
         cursor = conn.cursor()
         
         # Check if user exists
-        cursor.execute("SELECT ID FROM user WHERE telegram_id = %s", (str(telegram_id),))
-        existing_user = cursor.fetchone()
+        response = requests.get(f"http://localhost:5000/user/telegram?telegram_id={str(telegram_id)}")
+        result = json.loads(response.text)
+        userID = result['ID']
+        existing_user = response.status_code == 200
         
         if not existing_user:
             # Insert new user
-            cursor.execute(
-                "INSERT INTO user (telegram_id, username, `condition`, preferred_district, isActive, question_count) "
-                "VALUES (%s, %s, %s, %s, %s, %s)",
-                (telegram_id, username, condition, preferred_district, 1, 0)  # Reset question count to 0
-            )
+            obj = json.dumps({
+                "telegram_id": telegram_id,
+                "username": username,
+                "condition": condition,
+                "preferred_district": preferred_district,
+                "isActive": 1,
+                "question_count": 0,
+                "question_history": None
+            })
+            response = requests.post("http://localhost:5000/user", data=obj, headers={
+                'Content-Type': 'application/json'
+            })
+
+            if response.status_code != 200 :
+                raise Exception("Database Error")
+        
         else:
             # Update existing user
-            cursor.execute(
-                "UPDATE user SET username = %s, `condition` = %s, preferred_district = %s, isActive = %s, question_count = %s "
-                "WHERE telegram_id = %s",
-                (username, condition, preferred_district, 1, 0, telegram_id)  # Reset question count to 0
-            )
+            obj = json.dumps({
+                "telegram_id": telegram_id,
+                "username": username,
+                "condition": condition,
+                "preferred_district": preferred_district,
+                "isActive": 1,
+                "question_count": 0,
+                "question_history": None
+            })
+            response = requests.put("http://localhost:5000/user", data=obj, headers={
+                'Content-Type': 'application/json'
+            })
+
+            if response.status_code != 200 :
+                raise Exception("Database Error")
         
         
         # Provide options to continue
@@ -214,7 +237,7 @@ def register_confirm(update: Update, context: CallbackContext) -> int:
         conn.close()
 
         # Remember user ID for future operations
-        context.user_data['user_id'] = existing_user[0] if existing_user else cursor.lastrowid
+        context.user_data['user_id'] = userID if existing_user else cursor.lastrowid
         
         return prop_type_choice
         
@@ -226,6 +249,3 @@ def register_confirm(update: Update, context: CallbackContext) -> int:
         )
         return ConversationHandler.END
     
-
-
-"You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'telegram_id = 758731911' at line 1"
