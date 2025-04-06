@@ -1,6 +1,7 @@
 import os
 import requests
 import json
+import requests
 
 from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
@@ -64,18 +65,15 @@ def start(update: Update, context: CallbackContext) -> int:
     
     # Check if user is already registered
     try:
-        conn = db()
-        cursor = conn.cursor()
-        
-        cursor.execute("SELECT ID FROM user WHERE telegram_id = %s AND isActive = 1", (str(user.id),))
-        existing_user = cursor.fetchone()
-        
-        cursor.close()
-        conn.close()
+
+        response = requests.get(f"http://localhost:5000/user/telegram?telegram_id={user.id}")
+        result = json.loads(response.text)
+        userID = result['ID']
+        existing_user = response.status_code == 200
         
         if existing_user:
             # User exists, store their ID
-            context.user_data['user_id'] = existing_user[0]
+            context.user_data['user_id'] = userID
             
             update.message.reply_text(
                 f"Welcome back, {user.first_name}! What would you like to do?",
