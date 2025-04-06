@@ -57,7 +57,7 @@ def assign_to_group(update: Update, context: CallbackContext) -> int:
         "You can now connect with potential buyers/tenants in these groups.",
         reply_markup=ReplyKeyboardMarkup([
             ['Register Another Property'],
-            ['Search Properties'],
+            ['Search for Properties'],
             ['Ask a Question']
         ], one_time_keyboard=True)
     )
@@ -67,11 +67,10 @@ def assign_to_group(update: Update, context: CallbackContext) -> int:
 # Existing functions
 def start(update: Update, context: CallbackContext) -> int:
     user = update.effective_user
-    
     # Check if user is already registered
     try:
 
-        response = requests.get(f"http://localhost:5000/user/telegram?telegram_id={user.id}")
+        response = requests.get(f"http://2331899e50f63eff82201bcdfdb02ed6-722521655.ap-southeast-1.elb.amazonaws.com/user/telegram?telegram_id={user.id}")
         result = json.loads(response.text)
         userID = result['ID']
         existing_user = response.status_code == 200
@@ -135,11 +134,14 @@ def handle_question(update: Update, context: CallbackContext) -> int:
         cursor = conn.cursor()
         
         # Check if user exists in Database
-        response = requests.get(f"http://localhost:5000/user/telegram?telegram_id={str(user_id)}")
-        user_record = json.loads(response.text)
-        existing_user = response.status_code == 200
+        response = requests.get(f"http://2331899e50f63eff82201bcdfdb02ed6-722521655.ap-southeast-1.elb.amazonaws.com/user/telegram?telegram_id={str(user_id)}")
         
-        if existing_user:
+        # Check if request was successful (status code 200)
+        if response.status_code == 200:
+            # Parse the response text to get user record
+            user_record = json.loads(response.text)
+            existing_user = True
+            
             # User exists, get their current question count and history
             db_user_id = user_record['ID']
             question_count = user_record['question_count'] if user_record['question_count'] is not None else 0
@@ -157,6 +159,7 @@ def handle_question(update: Update, context: CallbackContext) -> int:
             context.user_data['user_id'] = db_user_id
         else:
             # User doesn't exist - they should register first, but we'll track anyway
+            existing_user = False
             question_count = 0
             question_history = []
             
@@ -166,16 +169,17 @@ def handle_question(update: Update, context: CallbackContext) -> int:
                 "question_count": 1,
                 "question_history": json.dumps([{"question": user_text, "timestamp": current_time}])
             })
-            response = requests.post("http://localhost:5000/user/question", data=obj, headers={
+            response = requests.post("http://2331899e50f63eff82201bcdfdb02ed6-722521655.ap-southeast-1.elb.amazonaws.com/user/question", data=obj, headers={
                 'Content-Type': 'application/json'
             })
 
-            if response.status_code != 200 :
-                raise Exception("Database Error")
+            if response.status_code != 200:
+                raise Exception(f"Database Error: {response.status_code} - {response.text}")
             
-            result = json.loads(response.text['result'])
-
-            db_user_id = result.lastrowid
+            # Parse the response text first, then access properties
+            response_json = json.loads(response.text)
+            result = response_json['result']
+            db_user_id = result['lastrowid'] if 'lastrowid' in result else None
             context.user_data['user_id'] = db_user_id
             
             conn.commit()
@@ -185,11 +189,11 @@ def handle_question(update: Update, context: CallbackContext) -> int:
             # Get response and return since we've already incremented in DB
             response = get_chatgpt_response(user_text)
             update.message.reply_text(
-                response,'''
+                response,
                 reply_markup=ReplyKeyboardMarkup([
                     ['Register Now'], 
                     ['Ask Another Question']
-                ], one_time_keyboard=True)'''
+                ], one_time_keyboard=True)
             )
             return question_asked
         
@@ -208,12 +212,12 @@ def handle_question(update: Update, context: CallbackContext) -> int:
             "question_count": question_count,
             "question_history": json.dumps(question_history),
         })
-        response = requests.put("http://localhost:5000/user/question", data=obj, headers={
+        response = requests.put("http://2331899e50f63eff82201bcdfdb02ed6-722521655.ap-southeast-1.elb.amazonaws.com/user/question", data=obj, headers={
             'Content-Type': 'application/json'
         })
 
-        if response.status_code != 200 :
-            raise Exception("Database Error")
+        if response.status_code != 200:
+            raise Exception(f"Database Error: {response.status_code} - {response.text}")
 
         # Get response from legal assistant
         response = get_chatgpt_response(user_text)
@@ -222,13 +226,26 @@ def handle_question(update: Update, context: CallbackContext) -> int:
         # (assuming isActive = 0 or NULL means not fully registered)
         if question_count >= 3:
             # Check if user is fully registered
-            response = requests.get(f"http://localhost:5000/user/telegram?telegram_id={str(user_id)}")
-            user_record = json.loads(response.text)
-            existing_user = response.status_code == 200
-
-            # If user is not active/registered, prompt them to register
-            if not existing_user or user_record['isActive'] != 1:
-                # Prompt for registration after 3rd question
+            check_response = requests.get(f"http://2331899e50f63eff82201bcdfdb02ed6-722521655.ap-southeast-1.elb.amazonaws.com/user/telegram?telegram_id={str(user_id)}")
+            
+            if check_response.status_code == 200:
+                user_record = json.loads(check_response.text)
+                # If user is not active/registered, prompt them to register
+                if user_record['isActive'] != 1:
+                    # Prompt for registration after 3rd question
+                    update.message.reply_text(
+                        response + "\n\nI've noticed you're interested in Hong Kong property matters! To get personalized property recommendations and join district-specific groups, please register your profile.",
+                        reply_markup=ReplyKeyboardMarkup([
+                            ['Register Now'],
+                            ['Ask Another Question']
+                        ], one_time_keyboard=True)
+                    )
+                    return user_telegram_id
+                else:
+                    # User is registered but still prompt them occasionally
+                    update.message.reply_text(response)
+            else:
+                # User doesn't exist in the database anymore or error
                 update.message.reply_text(
                     response + "\n\nI've noticed you're interested in Hong Kong property matters! To get personalized property recommendations and join district-specific groups, please register your profile.",
                     reply_markup=ReplyKeyboardMarkup([
@@ -237,39 +254,16 @@ def handle_question(update: Update, context: CallbackContext) -> int:
                     ], one_time_keyboard=True)
                 )
                 return user_telegram_id
-            else:
-                # User is registered but still prompt them occasionally
-                update.message.reply_text(
-                    response,
-                    reply_markup=ReplyKeyboardMarkup([
-                        ['Register a Property'], 
-                        ['Search for Properties'],
-                        ['Ask Another Question']
-                    ], one_time_keyboard=True)
-                )
         else:
             # Normal response for questions 1-2
-            update.message.reply_text(
-                response,'''
-                reply_markup=ReplyKeyboardMarkup([
-                    ['Register Now'], 
-                    ['Ask Another Question']
-                ], one_time_keyboard=True)'''
-            )
+            update.message.reply_text(response)
         
         return question_asked
         
     except Exception as e:
         logger.error(f"Error in handle_question: {e}")
         # Fallback in case of database error
-        response = get_chatgpt_response(user_text)
-        update.message.reply_text(
-            response,
-            reply_markup=ReplyKeyboardMarkup([
-                ['Register Now'], 
-                ['Ask a Question']
-            ], one_time_keyboard=True)
-        )
+        update.message.reply_text(response)
         return question_asked
 
 def get_chatgpt_response(query: str, context: Optional[str] = None) -> str:

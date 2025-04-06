@@ -164,7 +164,7 @@ def register_confirm(update: Update, context: CallbackContext) -> int:
     try:
         
         # Check if user exists
-        response = requests.get(f"http://localhost:5000/user/telegram?telegram_id={str(telegram_id)}")
+        response = requests.get(f"http://2331899e50f63eff82201bcdfdb02ed6-722521655.ap-southeast-1.elb.amazonaws.com/user/telegram?telegram_id={str(telegram_id)}")
         result = json.loads(response.text)
         userID = result['ID']
         existing_user = response.status_code == 200
@@ -180,7 +180,7 @@ def register_confirm(update: Update, context: CallbackContext) -> int:
                 "question_count": 0,
                 "question_history": None
             })
-            response = requests.post("http://localhost:5000/user", data=obj, headers={
+            response = requests.post("http://2331899e50f63eff82201bcdfdb02ed6-722521655.ap-southeast-1.elb.amazonaws.com/user", data=obj, headers={
                 'Content-Type': 'application/json'
             })
 
@@ -198,7 +198,7 @@ def register_confirm(update: Update, context: CallbackContext) -> int:
                 "question_count": 0,
                 "question_history": None
             })
-            response = requests.put("http://localhost:5000/user", data=obj, headers={
+            response = requests.put("http://2331899e50f63eff82201bcdfdb02ed6-722521655.ap-southeast-1.elb.amazonaws.com/user", data=obj, headers={
                 'Content-Type': 'application/json'
             })
 

@@ -1,9 +1,9 @@
 import os
-from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove, InlineKeyboardButton, InlineKeyboardMarkup, ChatMember, ChatMemberUpdated
 from dotenv import load_dotenv
 from telegram.ext import (
     Updater, CommandHandler, MessageHandler, Filters, 
-    CallbackContext, ConversationHandler, CallbackQueryHandler
+    CallbackContext, ConversationHandler, CallbackQueryHandler, ChatMemberHandler
 )
 from command.general import *
 from command.register import *
@@ -16,9 +16,9 @@ load_dotenv()
 
 def main() -> None:
     # Start the bot
-    updater = Updater(token=os.getenv("TELEGRAM_KEY"))
+    updater = Updater(token = os.getenv("TELEGRAM_KEY"))
     dispatcher = updater.dispatcher
-    
+
     # Main conversation handler
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler("start", start),
@@ -93,13 +93,17 @@ def main() -> None:
         fallbacks=[
             CommandHandler("help", help_command),
             CommandHandler("register", register_command),
-            CommandHandler("start", start)
+            CommandHandler("start", start),
+            CommandHandler("search", property_search),
+            CommandHandler("property", property_type_choice)
         ],
     )
     
     dispatcher.add_handler(conv_handler)
     dispatcher.add_handler(CommandHandler("help", help_command))
-    
+    dispatcher.add_handler(CommandHandler("search", property_search)),
+    dispatcher.add_handler(CommandHandler("property", property_type_choice))
+
     # Add error handler
     dispatcher.add_error_handler(error_handler)
     

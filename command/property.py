@@ -273,7 +273,7 @@ def property_registration_confirm(update: Update, context: CallbackContext) -> i
             "price_max": price_max,
             "paid_duration": paid_duration,
         })
-        response = requests.post("http://localhost:5000/property", data=obj, headers={
+        response = requests.post("http://2331899e50f63eff82201bcdfdb02ed6-722521655.ap-southeast-1.elb.amazonaws.com/property", data=obj, headers={
             'Content-Type': 'application/json'
         })
 
@@ -296,7 +296,7 @@ def property_search(update: Update, context: CallbackContext) -> int:
     try:
         user_telegramId = context._user_id_and_data[0]
 
-        response = requests.get(f"http://localhost:5000/property/search?telegram_id={user_telegramId}")
+        response = requests.get(f"http://2331899e50f63eff82201bcdfdb02ed6-722521655.ap-southeast-1.elb.amazonaws.com/property/search?telegram_id={user_telegramId}")
         result = json.loads(response.text)
 
         if response.status_code != 200 or len(result) == 0:
