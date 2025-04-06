@@ -89,7 +89,6 @@ def start(update: Update, context: CallbackContext) -> int:
                 reply_markup=ReplyKeyboardMarkup([
                     ['Register a Property'], 
                     ['Search for Properties'],
-                    ['Update My Profile'],
                     ['Ask a Question']
                 ], one_time_keyboard=True)
             )

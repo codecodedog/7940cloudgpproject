@@ -77,7 +77,6 @@ def register_condition(update: Update, context: CallbackContext) -> int:
             if i+1 < len(hk_districts):
                 row.append(hk_districts[i+1])
             district_buttons.append(row)
-        district_buttons.append(['All Districts'])
         
         update.message.reply_text(
             "Great! Now, which districts in Hong Kong are you interested in?",
@@ -116,27 +115,21 @@ def register_district(update: Update, context: CallbackContext) -> int:
     # Save preferred district
     district = update.message.text
     
-    if district == 'All Districts':
-        context.user_data['preferred_district'] = json.dumps(hk_districts)
-    else:
-        if 'preferred_districts' not in context.user_data:
-            context.user_data['preferred_districts'] = []
+    if 'preferred_districts' not in context.user_data:
+        context.user_data['preferred_districts'] = []
             
-        context.user_data['preferred_districts'].append(district)
+    context.user_data['preferred_districts'].append(district)
         
     # Format conditions and districts for confirmation
     conditions = context.user_data.get('conditions', [])
     conditions_str = ", ".join(conditions) if conditions else "None"
     
     districts = context.user_data.get('preferred_districts', [])
-    if district == 'All Districts':
-        districts_str = "All Districts"
-    else:
-        districts_str = ", ".join(districts) if districts else "None"
+    districts_str = ", ".join(districts) if districts else "None"
     
     # Convert lists to JSON strings for database storage
     context.user_data['condition'] = json.dumps(conditions)
-    context.user_data['preferred_district'] = json.dumps(districts) if district != 'All Districts' else json.dumps(hk_districts)
+    context.user_data['preferred_district'] = json.dumps(districts)
     
     update.message.reply_text(
         "Please confirm your registration details:\n\n"
