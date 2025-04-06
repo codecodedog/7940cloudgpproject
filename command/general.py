@@ -135,19 +135,20 @@ def handle_question(update: Update, context: CallbackContext) -> int:
         conn = db()
         cursor = conn.cursor()
         
-        # Check if user exists in database
-        cursor.execute("SELECT ID, question_count, question_history FROM user WHERE telegram_id = %s", (str(user_id),))
-        user_record = cursor.fetchone()
+        # Check if user exists in Database
+        response = requests.get(f"http://localhost:5000/user/telegram?telegram_id={str(user_id)}")
+        user_record = json.loads(response.text)
+        existing_user = response.status_code == 200
         
-        if user_record:
+        if existing_user:
             # User exists, get their current question count and history
-            db_user_id = user_record[0]
-            question_count = user_record[1] if user_record[1] is not None else 0
+            db_user_id = user_record['ID']
+            question_count = user_record['question_count'] if user_record['question_count'] is not None else 0
             
             # Parse existing question history or create new array
-            if user_record[2]:
+            if user_record['question_history']:
                 try:
-                    question_history = json.loads(user_record[2])
+                    question_history = json.loads(user_record['question_history'])
                 except json.JSONDecodeError:
                     question_history = []
             else:
@@ -161,11 +162,21 @@ def handle_question(update: Update, context: CallbackContext) -> int:
             question_history = []
             
             # Create minimal user record with their first question
-            cursor.execute(
-                "INSERT INTO user (telegram_id, question_count, question_history) VALUES (%s, %s, %s)",
-                (user_id, 1, json.dumps([{"question": user_text, "timestamp": current_time}]))
-            )
-            db_user_id = cursor.lastrowid
+            obj = json.dumps({
+                "telegram_id": user_id,
+                "question_count": 1,
+                "question_history": json.dumps([{"question": user_text, "timestamp": current_time}])
+            })
+            response = requests.post("http://localhost:5000/user/question", data=obj, headers={
+                'Content-Type': 'application/json'
+            })
+
+            if response.status_code != 200 :
+                raise Exception("Database Error")
+            
+            result = json.loads(response.text['result'])
+
+            db_user_id = result.lastrowid
             context.user_data['user_id'] = db_user_id
             
             conn.commit()
@@ -193,15 +204,18 @@ def handle_question(update: Update, context: CallbackContext) -> int:
         question_count += 1
         
         # Update the database with new count and history
-        cursor.execute(
-            "UPDATE user SET question_count = %s, question_history = %s WHERE ID = %s",
-            (question_count, json.dumps(question_history), db_user_id)
-        )
-        
-        conn.commit()
-        cursor.close()
-        conn.close()
-        
+        obj = json.dumps({
+            "ID": db_user_id,
+            "question_count": question_count,
+            "question_history": json.dumps(question_history),
+        })
+        response = requests.put("http://localhost:5000/user/question", data=obj, headers={
+            'Content-Type': 'application/json'
+        })
+
+        if response.status_code != 200 :
+            raise Exception("Database Error")
+
         # Get response from legal assistant
         response = get_chatgpt_response(user_text)
         
@@ -209,15 +223,12 @@ def handle_question(update: Update, context: CallbackContext) -> int:
         # (assuming isActive = 0 or NULL means not fully registered)
         if question_count >= 3:
             # Check if user is fully registered
-            conn = db()
-            cursor = conn.cursor()
-            cursor.execute("SELECT isActive FROM user WHERE ID = %s", (db_user_id,))
-            user_status = cursor.fetchone()
-            cursor.close()
-            conn.close()
-            
+            response = requests.get(f"http://localhost:5000/user/telegram?telegram_id={str(user_id)}")
+            user_record = json.loads(response.text)
+            existing_user = response.status_code == 200
+
             # If user is not active/registered, prompt them to register
-            if not user_status or user_status[0] != 1:
+            if not existing_user or user_record['isActive'] != 1:
                 # Prompt for registration after 3rd question
                 update.message.reply_text(
                     response + "\n\nI've noticed you're interested in Hong Kong property matters! To get personalized property recommendations and join district-specific groups, please register your profile.",

@@ -169,8 +169,6 @@ def register_confirm(update: Update, context: CallbackContext) -> int:
     
     # Store in database
     try:
-        conn = db()
-        cursor = conn.cursor()
         
         # Check if user exists
         response = requests.get(f"http://localhost:5000/user/telegram?telegram_id={str(telegram_id)}")
@@ -231,13 +229,6 @@ def register_confirm(update: Update, context: CallbackContext) -> int:
                 ['Ask a Question']
             ], one_time_keyboard=True)
         )
-
-        conn.commit()   
-        cursor.close()
-        conn.close()
-
-        # Remember user ID for future operations
-        context.user_data['user_id'] = userID if existing_user else cursor.lastrowid
         
         return prop_type_choice
         
