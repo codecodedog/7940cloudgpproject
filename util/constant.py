@@ -28,7 +28,7 @@ hk_districts = [
     "Central & Western", "Wan Chai", "Eastern", "Southern", 
     "Yau Tsim Mong", "Sham Shui Po", "Kowloon City", "Wong Tai Sin", 
     "Kwun Tong", "Tsuen Wan", "Tuen Mun", "Yuen Long", 
-    "North", "Tai Po", "Sha Tin", "Sai Kung", "Islands"
+    "North", "Tai Po", "Sha Tin", "Sai Kung", "Kwai Tsing", "Islands"
 ]
 
 # Property conditions

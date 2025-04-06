@@ -185,11 +185,11 @@ def handle_question(update: Update, context: CallbackContext) -> int:
             # Get response and return since we've already incremented in DB
             response = get_chatgpt_response(user_text)
             update.message.reply_text(
-                response,
+                response,'''
                 reply_markup=ReplyKeyboardMarkup([
                     ['Register Now'], 
                     ['Ask Another Question']
-                ], one_time_keyboard=True)
+                ], one_time_keyboard=True)'''
             )
             return question_asked
         
@@ -236,8 +236,6 @@ def handle_question(update: Update, context: CallbackContext) -> int:
                         ['Ask Another Question']
                     ], one_time_keyboard=True)
                 )
-                
-                # We don't reset the counter here - we'll only reset it when they actually register
                 return user_telegram_id
             else:
                 # User is registered but still prompt them occasionally
@@ -252,11 +250,11 @@ def handle_question(update: Update, context: CallbackContext) -> int:
         else:
             # Normal response for questions 1-2
             update.message.reply_text(
-                response,
+                response,'''
                 reply_markup=ReplyKeyboardMarkup([
                     ['Register Now'], 
                     ['Ask Another Question']
-                ], one_time_keyboard=True)
+                ], one_time_keyboard=True)'''
             )
         
         return question_asked
@@ -269,7 +267,7 @@ def handle_question(update: Update, context: CallbackContext) -> int:
             response,
             reply_markup=ReplyKeyboardMarkup([
                 ['Register Now'], 
-                ['Ask Another Question']
+                ['Ask a Question']
             ], one_time_keyboard=True)
         )
         return question_asked
