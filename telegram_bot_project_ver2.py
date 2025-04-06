@@ -21,7 +21,8 @@ def main() -> None:
     
     # Main conversation handler
     conv_handler = ConversationHandler(
-        entry_points=[CommandHandler("start", start)],
+        entry_points=[CommandHandler("start", start),
+        MessageHandler(Filters.text & ~Filters.command, handle_question)],
         states={
             # User registration states
             user_telegram_id: [
@@ -81,6 +82,7 @@ def main() -> None:
             
             # Normal conversation
             question_asked: [
+                MessageHandler(Filters.regex('^Register Now$'), register_command),
                 MessageHandler(Filters.text & ~Filters.command, handle_question)
             ],
             # Property search

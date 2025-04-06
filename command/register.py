@@ -179,16 +179,16 @@ def register_confirm(update: Update, context: CallbackContext) -> int:
         if not existing_user:
             # Insert new user
             cursor.execute(
-                "INSERT INTO user (telegram_id, username, `condition`, preferred_district, isActive) "
-                "VALUES (%s, %s, %s, %s, %s)",
-                (telegram_id, username, condition, preferred_district, 1)
+                "INSERT INTO user (telegram_id, username, `condition`, preferred_district, isActive, question_count) "
+                "VALUES (%s, %s, %s, %s, %s, %s)",
+                (telegram_id, username, condition, preferred_district, 1, 0)  # Reset question count to 0
             )
         else:
             # Update existing user
             cursor.execute(
-                "UPDATE user SET username = %s, `condition` = %s, preferred_district = %s, isActive = %s "
+                "UPDATE user SET username = %s, `condition` = %s, preferred_district = %s, isActive = %s, question_count = %s "
                 "WHERE telegram_id = %s",
-                (username, condition, preferred_district, 1, telegram_id)
+                (username, condition, preferred_district, 1, 0, telegram_id)  # Reset question count to 0
             )
         
         
