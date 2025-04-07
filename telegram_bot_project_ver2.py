@@ -1,5 +1,4 @@
 import os
-from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove, InlineKeyboardButton, InlineKeyboardMarkup, ChatMember, ChatMemberUpdated
 from dotenv import load_dotenv
 from telegram.ext import (
     Updater, CommandHandler, MessageHandler, Filters, 
@@ -16,7 +15,7 @@ load_dotenv()
 
 def main() -> None:
     # Start the bot
-    updater = Updater(token = os.getenv("TELEGRAM_KEY"))
+    updater = Updater(token = "7903454849:AAF5enHykbuxWK1A-1PUE9KAtobTqmFhpi0")
     dispatcher = updater.dispatcher
 
     # Main conversation handler

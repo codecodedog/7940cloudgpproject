@@ -10,13 +10,12 @@ from telegram.ext import (
     CallbackContext, ConversationHandler, CallbackQueryHandler
 )
 from typing import Optional, Dict, List
-from util.db_connect import get_connection as db
 from util.constant import *
 from util.logger import logger
 
 class hkproperty_legalasst:
     def __init__(self):
-        self.apiKey = os.getenv('CHATGPT_API_KEY')
+        self.apiKey = "7b6a68a8-f20f-4613-b871-a7ea54453867"
         self.modelName = "gpt-4-o-mini"
         self.apiVersion = "2024-10-21"
         self.basicUrl = "https://genai.hkbu.edu.hk/general/rest"
@@ -129,10 +128,6 @@ def handle_question(update: Update, context: CallbackContext) -> int:
         # Get current time for timestamping questions
         current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         
-        # Connect to database
-        conn = db()
-        cursor = conn.cursor()
-        
         # Check if user exists in Database
         response = requests.get(f"http://2331899e50f63eff82201bcdfdb02ed6-722521655.ap-southeast-1.elb.amazonaws.com/user/telegram?telegram_id={str(user_id)}")
         
@@ -182,14 +177,10 @@ def handle_question(update: Update, context: CallbackContext) -> int:
             db_user_id = result['lastrowid'] if 'lastrowid' in result else None
             context.user_data['user_id'] = db_user_id
             
-            conn.commit()
-            cursor.close()
-            conn.close()
-            
             # Get response and return since we've already incremented in DB
-            response = get_chatgpt_response(user_text)
+            response_str = get_chatgpt_response(user_text)
             update.message.reply_text(
-                response,
+                response_str,
                 reply_markup=ReplyKeyboardMarkup([
                     ['Register Now'], 
                     ['Ask Another Question']
@@ -220,21 +211,21 @@ def handle_question(update: Update, context: CallbackContext) -> int:
             raise Exception(f"Database Error: {response.status_code} - {response.text}")
 
         # Get response from legal assistant
-        response = get_chatgpt_response(user_text)
+        response_str = get_chatgpt_response(user_text)
         
         # Check if we've reached 3 questions for unregistered users
         # (assuming isActive = 0 or NULL means not fully registered)
         if question_count >= 3:
             # Check if user is fully registered
-            check_response = requests.get(f"http://2331899e50f63eff82201bcdfdb02ed6-722521655.ap-southeast-1.elb.amazonaws.com/user/telegram?telegram_id={str(user_id)}")
+            response = requests.get(f"http://2331899e50f63eff82201bcdfdb02ed6-722521655.ap-southeast-1.elb.amazonaws.com/user/telegram?telegram_id={str(user_id)}")
             
-            if check_response.status_code == 200:
-                user_record = json.loads(check_response.text)
+            if response.status_code == 200:
+                user_record = json.loads(response.text)
                 # If user is not active/registered, prompt them to register
                 if user_record['isActive'] != 1:
                     # Prompt for registration after 3rd question
                     update.message.reply_text(
-                        response + "\n\nI've noticed you're interested in Hong Kong property matters! To get personalized property recommendations and join district-specific groups, please register your profile.",
+                        response_str + "\n\nI've noticed you're interested in Hong Kong property matters! To get personalized property recommendations and join district-specific groups, please register your profile.",
                         reply_markup=ReplyKeyboardMarkup([
                             ['Register Now'],
                             ['Ask Another Question']
@@ -243,11 +234,11 @@ def handle_question(update: Update, context: CallbackContext) -> int:
                     return user_telegram_id
                 else:
                     # User is registered but still prompt them occasionally
-                    update.message.reply_text(response)
+                    update.message.reply_text(response_str)
             else:
                 # User doesn't exist in the database anymore or error
                 update.message.reply_text(
-                    response + "\n\nI've noticed you're interested in Hong Kong property matters! To get personalized property recommendations and join district-specific groups, please register your profile.",
+                    response_str + "\n\nI've noticed you're interested in Hong Kong property matters! To get personalized property recommendations and join district-specific groups, please register your profile.",
                     reply_markup=ReplyKeyboardMarkup([
                         ['Register Now'],
                         ['Ask Another Question']
@@ -256,7 +247,7 @@ def handle_question(update: Update, context: CallbackContext) -> int:
                 return user_telegram_id
         else:
             # Normal response for questions 1-2
-            update.message.reply_text(response)
+            update.message.reply_text(response_str)
         
         return question_asked
         

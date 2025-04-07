@@ -7,7 +7,6 @@ from telegram.ext import (
     Updater, CommandHandler, MessageHandler, Filters, 
     CallbackContext, ConversationHandler, CallbackQueryHandler
 )
-from util.db_connect import get_connection as db
 from util.constant import *
 from util.logger import logger
 
