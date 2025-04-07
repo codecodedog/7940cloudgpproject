@@ -97,7 +97,7 @@ def main() -> None:
             CommandHandler("property", property_type_choice)
         ],
     )
-    
+    # Dispatcher handlers
     dispatcher.add_handler(conv_handler)
     dispatcher.add_handler(CommandHandler("help", help_command))
     dispatcher.add_handler(CommandHandler("search", property_search)),

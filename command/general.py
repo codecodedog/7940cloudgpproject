@@ -44,9 +44,6 @@ def assign_to_group(update: Update, context: CallbackContext) -> int:
     district = context.user_data.get('district')
     is_rent = context.user_data.get('is_rent')
     
-    # This would involve actual group assignments in Telegram
-    # For now, we'll just simulate this with a message
-    
     group_type = "Rental" if is_rent else "Sales"
     
     update.message.reply_text(
@@ -63,12 +60,11 @@ def assign_to_group(update: Update, context: CallbackContext) -> int:
     
     return prop_type_choice
 
-# Existing functions
 def start(update: Update, context: CallbackContext) -> int:
+    # /start function
     user = update.effective_user
-    # Check if user is already registered
-    try:
 
+    try:
         response = requests.get(f"http://2331899e50f63eff82201bcdfdb02ed6-722521655.ap-southeast-1.elb.amazonaws.com/user/telegram?telegram_id={user.id}")
         result = json.loads(response.text)
         userID = result['ID']
@@ -94,7 +90,6 @@ def start(update: Update, context: CallbackContext) -> int:
             return prop_type_choice
         else:
             # New user, suggest registration
-
             intro_message = "Hello! I'm Dr. Law, your Hong Kong Property Legal Assistant! 😊 I can answer your questions about Hong Kong property laws and regulations. What would you like to know today?"
             update.message.reply_text(intro_message)
 
@@ -120,6 +115,7 @@ def start(update: Update, context: CallbackContext) -> int:
         return question_asked
 
 def handle_question(update: Update, context: CallbackContext) -> int:
+    # Handle user questions and provide responses
     user_text = update.message.text
     user = update.effective_user
     user_id = user.id
@@ -133,7 +129,7 @@ def handle_question(update: Update, context: CallbackContext) -> int:
         
         # Check if request was successful (status code 200)
         if response.status_code == 200:
-            # Parse the response text to get user record
+
             user_record = json.loads(response.text)
             existing_user = True
             
@@ -150,10 +146,10 @@ def handle_question(update: Update, context: CallbackContext) -> int:
             else:
                 question_history = []
             
-            # Store user ID in context
+
             context.user_data['user_id'] = db_user_id
         else:
-            # User doesn't exist - they should register first, but we'll track anyway
+            # User does not exist, create a new record
             existing_user = False
             question_count = 0
             question_history = []
@@ -214,7 +210,7 @@ def handle_question(update: Update, context: CallbackContext) -> int:
         response_str = get_chatgpt_response(user_text)
         
         # Check if we've reached 3 questions for unregistered users
-        # (assuming isActive = 0 or NULL means not fully registered)
+        # Assume isActive = 0 or NULL means not fully registered
         if question_count >= 3:
             # Check if user is fully registered
             response = requests.get(f"http://2331899e50f63eff82201bcdfdb02ed6-722521655.ap-southeast-1.elb.amazonaws.com/user/telegram?telegram_id={str(user_id)}")
