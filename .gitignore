@@ -4,12 +4,7 @@ __pycache__/
 *$py.class
 
 # Virtual environment
-venv/
-env/
-.venv/
-ENV/
-env.bak/
-venv.bak/
+
 
 # IDE specific files
 .vscode/
@@ -43,14 +38,7 @@ wheels/
 *.db
 
 # Local development
-.env
-.env.local
-.env.development
-.env.test
-.env.production
-.env.*
-.credentials
-secrets.ini
+
 
 # Testing
 .coverage

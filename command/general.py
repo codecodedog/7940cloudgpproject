@@ -15,7 +15,7 @@ from util.logger import logger
 
 class hkproperty_legalasst:
     def __init__(self):
-        self.apiKey = "7b6a68a8-f20f-4613-b871-a7ea54453867"
+        self.apiKey = os.getenv("CHATGPT_API_KEY")
         self.modelName = "gpt-4-o-mini"
         self.apiVersion = "2024-10-21"
         self.basicUrl = "https://genai.hkbu.edu.hk/general/rest"
