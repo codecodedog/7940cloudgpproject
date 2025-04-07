@@ -1,6 +1,8 @@
 import os
 import requests
 import json
+from datetime import datetime
+import requests
 
 from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
@@ -8,19 +10,22 @@ from telegram.ext import (
     CallbackContext, ConversationHandler, CallbackQueryHandler
 )
 from typing import Optional, Dict, List
-import util.db_connect
 from util.constant import *
 from util.logger import logger
 
-class ChatGPT:
+class hkproperty_legalasst:
     def __init__(self):
-        self.apiKey = os.getenv('CHATGPT_API_KEY')
+        self.apiKey = "7b6a68a8-f20f-4613-b871-a7ea54453867"
         self.modelName = "gpt-4-o-mini"
         self.apiVersion = "2024-10-21"
         self.basicUrl = "https://genai.hkbu.edu.hk/general/rest"
         
     def get_response(self, message):
-        conversation = [{"role": "user", "content": message}]
+        # Incorporate the message from legal chatbot into the conversation
+        conversation = [
+            {'role': 'system', 'content': 'You are a chatbot in a chat group, familiar with Hong Kong Regulations and Property Laws.\n You act as a legal consultant to answer property buy/sell or lease questions professionally.\n You always answer questions based on Hong Kong Regulation only in legal context.\n To be accurate, include but not limited to Hong Kong Cap. 511 Estate Agents Ordinance and Cap. 219 Conveyancing and Property Ordinance.\n Introduce yourself as ‘Dr Law’ and always use happy emojis to answer the user in the first question but no need to use emoji again in the conversation.\n You must always answer correctly based on actual Hong Kong Regulations and best practices, if you are not absolutely sure, please state your educated answer as ‘suggestion’.\n As a consultant  to link up users with similar interests in buy/sell/lease in the same district, you must ask the user politely to enter district group by start the "/register" command after 3 questions you answered from user. \n The user that is interested to join the district group, ask them to use  "/register". \n If the user asks in Chinese, always answer in Traditional Chinese'},
+            {'role': 'user', 'content': message},
+        ]
         url = self.basicUrl + "/deployments/" + self.modelName + "/chat/completions/?api-version=" + self.apiVersion
         headers = {'Content-Type': 'application/json', 'api-key': self.apiKey} 
         payload = {'messages': conversation}
@@ -51,7 +56,7 @@ def assign_to_group(update: Update, context: CallbackContext) -> int:
         "You can now connect with potential buyers/tenants in these groups.",
         reply_markup=ReplyKeyboardMarkup([
             ['Register Another Property'],
-            ['Search Properties'],
+            ['Search for Properties'],
             ['Ask a Question']
         ], one_time_keyboard=True)
     )
@@ -61,28 +66,27 @@ def assign_to_group(update: Update, context: CallbackContext) -> int:
 # Existing functions
 def start(update: Update, context: CallbackContext) -> int:
     user = update.effective_user
-    
     # Check if user is already registered
     try:
-        conn = db_connect.get_connection()
-        cursor = conn.cursor()
-        
-        cursor.execute("SELECT ID FROM user WHERE telegram_id = %s", (str(user.id),))
-        existing_user = cursor.fetchone()
-        
-        cursor.close()
-        conn.close()
+
+        response = requests.get(f"http://2331899e50f63eff82201bcdfdb02ed6-722521655.ap-southeast-1.elb.amazonaws.com/user/telegram?telegram_id={user.id}")
+        result = json.loads(response.text)
+        userID = result['ID']
+        existing_user = response.status_code == 200
         
         if existing_user:
             # User exists, store their ID
-            context.user_data['user_id'] = existing_user[0]
+            context.user_data['user_id'] = userID
             
+            # Introduce Dr. Law
+            intro_message = "Hello! I'm Dr. Law, your Hong Kong Property Legal Assistant! 😊 I can answer your questions about Hong Kong property laws and regulations. What would you like to know today?"
+            update.message.reply_text(intro_message)
+
             update.message.reply_text(
                 f"Welcome back, {user.first_name}! What would you like to do?",
                 reply_markup=ReplyKeyboardMarkup([
                     ['Register a Property'], 
                     ['Search for Properties'],
-                    ['Update My Profile'],
                     ['Ask a Question']
                 ], one_time_keyboard=True)
             )
@@ -90,6 +94,10 @@ def start(update: Update, context: CallbackContext) -> int:
             return prop_type_choice
         else:
             # New user, suggest registration
+
+            intro_message = "Hello! I'm Dr. Law, your Hong Kong Property Legal Assistant! 😊 I can answer your questions about Hong Kong property laws and regulations. What would you like to know today?"
+            update.message.reply_text(intro_message)
+
             update.message.reply_text(
                 f"Hello {user.first_name}! Welcome to Hong Kong Property Assistant.\n\n"
                 "To get started, please register your profile first.",
@@ -114,29 +122,146 @@ def start(update: Update, context: CallbackContext) -> int:
 def handle_question(update: Update, context: CallbackContext) -> int:
     user_text = update.message.text
     user = update.effective_user
+    user_id = user.id
     
-    # Get ChatGPT response
-    response = get_chatgpt_response(user_text, context="Hong Kong property law and real estate")
-    
-    update.message.reply_text(
-        response,
-        reply_markup=ReplyKeyboardMarkup([
-            ['Register a Property'], 
-            ['Search for Properties'],
-            ['Ask Another Question']
-        ], one_time_keyboard=True)
-    )
-    
-    return question_asked
+    try:
+        # Get current time for timestamping questions
+        current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        
+        # Check if user exists in Database
+        response = requests.get(f"http://2331899e50f63eff82201bcdfdb02ed6-722521655.ap-southeast-1.elb.amazonaws.com/user/telegram?telegram_id={str(user_id)}")
+        
+        # Check if request was successful (status code 200)
+        if response.status_code == 200:
+            # Parse the response text to get user record
+            user_record = json.loads(response.text)
+            existing_user = True
+            
+            # User exists, get their current question count and history
+            db_user_id = user_record['ID']
+            question_count = user_record['question_count'] if user_record['question_count'] is not None else 0
+            
+            # Parse existing question history or create new array
+            if user_record['question_history']:
+                try:
+                    question_history = json.loads(user_record['question_history'])
+                except json.JSONDecodeError:
+                    question_history = []
+            else:
+                question_history = []
+            
+            # Store user ID in context
+            context.user_data['user_id'] = db_user_id
+        else:
+            # User doesn't exist - they should register first, but we'll track anyway
+            existing_user = False
+            question_count = 0
+            question_history = []
+            
+            # Create minimal user record with their first question
+            obj = json.dumps({
+                "telegram_id": user_id,
+                "question_count": 1,
+                "question_history": json.dumps([{"question": user_text, "timestamp": current_time}])
+            })
+            response = requests.post("http://2331899e50f63eff82201bcdfdb02ed6-722521655.ap-southeast-1.elb.amazonaws.com/user/question", data=obj, headers={
+                'Content-Type': 'application/json'
+            })
+
+            if response.status_code != 200:
+                raise Exception(f"Database Error: {response.status_code} - {response.text}")
+            
+            # Parse the response text first, then access properties
+            response_json = json.loads(response.text)
+            result = response_json['result']
+            db_user_id = result['lastrowid'] if 'lastrowid' in result else None
+            context.user_data['user_id'] = db_user_id
+            
+            # Get response and return since we've already incremented in DB
+            response_str = get_chatgpt_response(user_text)
+            update.message.reply_text(
+                response_str,
+                reply_markup=ReplyKeyboardMarkup([
+                    ['Register Now'], 
+                    ['Ask Another Question']
+                ], one_time_keyboard=True)
+            )
+            return question_asked
+        
+        # Add current question to history
+        question_history.append({
+            "question": user_text,
+            "timestamp": current_time
+        })
+        
+        # Increment question count
+        question_count += 1
+        
+        # Update the database with new count and history
+        obj = json.dumps({
+            "ID": db_user_id,
+            "question_count": question_count,
+            "question_history": json.dumps(question_history),
+        })
+        response = requests.put("http://2331899e50f63eff82201bcdfdb02ed6-722521655.ap-southeast-1.elb.amazonaws.com/user/question", data=obj, headers={
+            'Content-Type': 'application/json'
+        })
+
+        if response.status_code != 200:
+            raise Exception(f"Database Error: {response.status_code} - {response.text}")
+
+        # Get response from legal assistant
+        response_str = get_chatgpt_response(user_text)
+        
+        # Check if we've reached 3 questions for unregistered users
+        # (assuming isActive = 0 or NULL means not fully registered)
+        if question_count >= 3:
+            # Check if user is fully registered
+            response = requests.get(f"http://2331899e50f63eff82201bcdfdb02ed6-722521655.ap-southeast-1.elb.amazonaws.com/user/telegram?telegram_id={str(user_id)}")
+            
+            if response.status_code == 200:
+                user_record = json.loads(response.text)
+                # If user is not active/registered, prompt them to register
+                if user_record['isActive'] != 1:
+                    # Prompt for registration after 3rd question
+                    update.message.reply_text(
+                        response_str + "\n\nI've noticed you're interested in Hong Kong property matters! To get personalized property recommendations and join district-specific groups, please register your profile.",
+                        reply_markup=ReplyKeyboardMarkup([
+                            ['Register Now'],
+                            ['Ask Another Question']
+                        ], one_time_keyboard=True)
+                    )
+                    return user_telegram_id
+                else:
+                    # User is registered but still prompt them occasionally
+                    update.message.reply_text(response_str)
+            else:
+                # User doesn't exist in the database anymore or error
+                update.message.reply_text(
+                    response_str + "\n\nI've noticed you're interested in Hong Kong property matters! To get personalized property recommendations and join district-specific groups, please register your profile.",
+                    reply_markup=ReplyKeyboardMarkup([
+                        ['Register Now'],
+                        ['Ask Another Question']
+                    ], one_time_keyboard=True)
+                )
+                return user_telegram_id
+        else:
+            # Normal response for questions 1-2
+            update.message.reply_text(response_str)
+        
+        return question_asked
+        
+    except Exception as e:
+        logger.error(f"Error in handle_question: {e}")
+        # Fallback in case of database error
+        update.message.reply_text(response)
+        return question_asked
 
 def get_chatgpt_response(query: str, context: Optional[str] = None) -> str:
     # Get a response from ChatGPT based on the user's query
-    chatgpt_instance = ChatGPT()
-    
-    if context:
-        query = f"Context: {context}\n\nUser question: {query}"
+    legal_assistant = hkproperty_legalasst()
             
-    return chatgpt_instance.get_response(query)
+    return legal_assistant.get_response(query)
 
 def help_command(update: Update, context: CallbackContext) -> None:
     help_text = (

@@ -7,9 +7,9 @@ from telegram.ext import (
     Updater, CommandHandler, MessageHandler, Filters, 
     CallbackContext, ConversationHandler, CallbackQueryHandler
 )
-import util.db_connect
 from util.constant import *
 from util.logger import logger
+from command.general import assign_to_group
 
 # Property Registration Flow
 def property_type_choice(update: Update, context: CallbackContext) -> int:
@@ -25,10 +25,10 @@ def property_type_choice(update: Update, context: CallbackContext) -> int:
     if user_choice == 'Search for Properties':
         # Implement property search functionality
         update.message.reply_text(
-            "Property search feature coming soon!",
-            reply_markup=ReplyKeyboardRemove()
+            "What are you looking for?",
+            reply_markup=ReplyKeyboardMarkup([['Base on my profile']], one_time_keyboard=True)
         )
-        return ConversationHandler.END
+        return prop_search
         
     # Starting property registration
     update.message.reply_text(
@@ -262,19 +262,22 @@ def property_registration_confirm(update: Update, context: CallbackContext) -> i
     
     try:
         # Store property in database
-        conn = db_connect.get_connection()
-        cursor = conn.cursor()
-        
-        cursor.execute(
-            "INSERT INTO property (user_id, district, address, `condition`, is_rent, price_min, price_max, paid_duration) "
-            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
-            (user_id, district, address, condition_json, is_rent, price_min, price_max, paid_duration)
-        )
-        
-        property_id = cursor.lastrowid
-        conn.commit()
-        cursor.close()
-        conn.close()
+        obj = json.dumps({
+            "user_id": user_id,
+            "district": district,
+            "address": address,
+            "condition": condition_json,
+            "is_rent": is_rent,
+            "price_min": price_min,
+            "price_max": price_max,
+            "paid_duration": paid_duration,
+        })
+        response = requests.post("http://2331899e50f63eff82201bcdfdb02ed6-722521655.ap-southeast-1.elb.amazonaws.com/property", data=obj, headers={
+            'Content-Type': 'application/json'
+        })
+
+        if response.status_code != 200 :
+            raise Exception("Database Error")
         
         # Send to group assignment
         return assign_to_group(update, context)
@@ -287,3 +290,39 @@ def property_registration_confirm(update: Update, context: CallbackContext) -> i
         )
         return ConversationHandler.END
 
+# Implement property search functionality
+def property_search(update: Update, context: CallbackContext) -> int:
+    try:
+        user_telegramId = context._user_id_and_data[0]
+
+        response = requests.get(f"http://2331899e50f63eff82201bcdfdb02ed6-722521655.ap-southeast-1.elb.amazonaws.com/property/search?telegram_id={user_telegramId}")
+        result = json.loads(response.text)
+
+        if response.status_code != 200 or len(result) == 0:
+            update.message.reply_text(
+                "Sorry, there are no property that are suitable at the moment"
+            )
+        else:
+            reply_str = "There are several property that you may feel interested:\n\n"
+            for filterProperty in result:
+                reply_str += (f"{filterProperty['address']} \n"
+                + f"District: {filterProperty['district']}\n"
+                + f"Conditions: {filterProperty['factor']}\n"
+                + f"Owner: @{filterProperty['owner']['username']}\n"
+                + f"Price Range: {filterProperty['price_range']}\n"
+                + f"Paid Duration: {filterProperty['paid_duration']}\n"
+                + "\n\n")
+
+            update.message.reply_text(
+                reply_str
+            )
+      
+
+        return question_asked
+
+    except Exception as e:
+        update.message.reply_text(
+            "Sorry, there was an error. Please try again later.",
+            reply_markup=ReplyKeyboardRemove()
+        )
+        return ConversationHandler.END

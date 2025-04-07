@@ -7,7 +7,6 @@ from telegram.ext import (
     Updater, CommandHandler, MessageHandler, Filters, 
     CallbackContext, ConversationHandler, CallbackQueryHandler
 )
-from util.db_connect import get_connection as db
 from util.constant import *
 from util.logger import logger
 
@@ -77,7 +76,6 @@ def register_condition(update: Update, context: CallbackContext) -> int:
             if i+1 < len(hk_districts):
                 row.append(hk_districts[i+1])
             district_buttons.append(row)
-        district_buttons.append(['All Districts'])
         
         update.message.reply_text(
             "Great! Now, which districts in Hong Kong are you interested in?",
@@ -116,27 +114,21 @@ def register_district(update: Update, context: CallbackContext) -> int:
     # Save preferred district
     district = update.message.text
     
-    if district == 'All Districts':
-        context.user_data['preferred_district'] = json.dumps(hk_districts)
-    else:
-        if 'preferred_districts' not in context.user_data:
-            context.user_data['preferred_districts'] = []
+    if 'preferred_districts' not in context.user_data:
+        context.user_data['preferred_districts'] = []
             
-        context.user_data['preferred_districts'].append(district)
+    context.user_data['preferred_districts'].append(district)
         
     # Format conditions and districts for confirmation
     conditions = context.user_data.get('conditions', [])
     conditions_str = ", ".join(conditions) if conditions else "None"
     
     districts = context.user_data.get('preferred_districts', [])
-    if district == 'All Districts':
-        districts_str = "All Districts"
-    else:
-        districts_str = ", ".join(districts) if districts else "None"
+    districts_str = ", ".join(districts) if districts else "None"
     
     # Convert lists to JSON strings for database storage
     context.user_data['condition'] = json.dumps(conditions)
-    context.user_data['preferred_district'] = json.dumps(districts) if district != 'All Districts' else json.dumps(hk_districts)
+    context.user_data['preferred_district'] = json.dumps(districts)
     
     update.message.reply_text(
         "Please confirm your registration details:\n\n"
@@ -169,35 +161,60 @@ def register_confirm(update: Update, context: CallbackContext) -> int:
     
     # Store in database
     try:
-        conn = db()
-        cursor = conn.cursor()
         
         # Check if user exists
-        cursor.execute("SELECT ID FROM user WHERE telegram_id = %s", (str(telegram_id),))
-        existing_user = cursor.fetchone()
+        response = requests.get(f"http://2331899e50f63eff82201bcdfdb02ed6-722521655.ap-southeast-1.elb.amazonaws.com/user/telegram?telegram_id={str(telegram_id)}")
+        result = json.loads(response.text)
+        userID = result['ID']
+        existing_user = response.status_code == 200
         
         if not existing_user:
             # Insert new user
-            cursor.execute(
-                "INSERT INTO user (telegram_id, username, `condition`, preferred_district) "
-                "VALUES (%s, %s, %s, %s)",
-                (str(telegram_id), username, condition, preferred_district)
-            )
+            obj = json.dumps({
+                "telegram_id": telegram_id,
+                "username": username,
+                "condition": condition,
+                "preferred_district": preferred_district,
+                "isActive": 1,
+                "question_count": 0,
+                "question_history": None
+            })
+            response = requests.post("http://2331899e50f63eff82201bcdfdb02ed6-722521655.ap-southeast-1.elb.amazonaws.com/user", data=obj, headers={
+                'Content-Type': 'application/json'
+            })
+
+            if response.status_code != 200 :
+                raise Exception("Database Error")
+        
         else:
             # Update existing user
-            cursor.execute(
-                "UPDATE user SET username = %s, `condition` = %s, preferred_district = %s "
-                "WHERE telegram_id = %s",
-                (username, condition, preferred_district, str(telegram_id))
-            )
+            obj = json.dumps({
+                "telegram_id": telegram_id,
+                "username": username,
+                "condition": condition,
+                "preferred_district": preferred_district,
+                "isActive": 1,
+                "question_count": 0,
+                "question_history": None
+            })
+            response = requests.put("http://2331899e50f63eff82201bcdfdb02ed6-722521655.ap-southeast-1.elb.amazonaws.com/user", data=obj, headers={
+                'Content-Type': 'application/json'
+            })
+
+            if response.status_code != 200 :
+                raise Exception("Database Error")
         
-        conn.commit()
-        cursor.close()
-        conn.close()
         
         # Provide options to continue
+        reply_str = (
+            "Registration successful! \n"
+            f"Please join the following group for your preferred district discussion! \n\n"
+        )
+        for district in json.loads(preferred_district):
+            reply_str += f"{district}: {group_invite_link[district]}"
+            
         update.message.reply_text(
-            "Registration successful! What would you like to do next?",
+            reply_str, 
             reply_markup=ReplyKeyboardMarkup([
                 ['Register a Property'], 
                 ['Search for Properties'],
@@ -205,15 +222,13 @@ def register_confirm(update: Update, context: CallbackContext) -> int:
             ], one_time_keyboard=True)
         )
         
-        # Remember user ID for future operations
-        context.user_data['user_id'] = existing_user[0] if existing_user else cursor.lastrowid
-        
         return prop_type_choice
         
     except Exception as e:
-        logger.error(f"Database error: {e}")
+        logger.error(f"Error: {e}")
         update.message.reply_text(
             "Sorry, there was an error saving your information. Please try again later.",
             reply_markup=ReplyKeyboardRemove()
         )
         return ConversationHandler.END
+    
