@@ -27,7 +27,7 @@ jobs:
         with:
           context: .
           push: true
-          tags: hinorpio/comp7940_api:latest
+          tags: hinorpio/comp7940_bot:latest
            
       - name: Deploy to AWS Lightsail Instance 1
         uses: appleboy/ssh-action@master
